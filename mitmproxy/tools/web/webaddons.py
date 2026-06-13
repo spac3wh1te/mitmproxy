@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hmac
 import logging
+import re
 import secrets
 import webbrowser
 from collections.abc import Sequence
@@ -17,6 +18,23 @@ if TYPE_CHECKING:
     from mitmproxy.tools.web.master import WebMaster
 
 logger = logging.getLogger(__name__)
+
+
+def hide_hosts_to_view_filter(hosts: Sequence[str]) -> str | None:
+    patterns = []
+    for host in hosts:
+        host = host.strip()
+        if not host:
+            continue
+        pattern = re.escape(host).replace(r"\*", ".*")
+        if host.startswith("*."):
+            pattern = r"[^.]+" + pattern[2:]
+        patterns.append(f'~d "^{pattern}$"')
+
+    if not patterns:
+        return None
+
+    return f"!({' | '.join(patterns)})"
 
 
 class WebAuth:
@@ -86,17 +104,38 @@ class WebAuth:
 
 
 class WebAddon:
+    _updating_view_filter: bool
+
+    def __init__(self) -> None:
+        self._updating_view_filter = False
+
     def load(self, loader):
         loader.add_option("web_open_browser", bool, True, "Start a browser.")
         loader.add_option("web_debug", bool, False, "Enable mitmweb debugging.")
         loader.add_option("web_port", int, 8081, "Web UI port.")
         loader.add_option("web_host", str, "127.0.0.1", "Web UI host.")
         loader.add_option(
+            "web_hide_hosts",
+            Sequence[str],
+            [],
+            "Hide flows for matching host wildcard patterns in mitmweb. "
+            "Use one pattern per line, for example *.example.com or api.example.*.",
+        )
+        loader.add_option(
             "web_columns",
             Sequence[str],
             ["tls", "icon", "path", "method", "status", "size", "time"],
             f"Columns to show in the flow list. Can be one of the following: {', '.join(AVAILABLE_WEB_COLUMNS)}",
         )
+
+    def configure(self, updated) -> None:
+        if "web_hide_hosts" in updated and not self._updating_view_filter:
+            view_filter = hide_hosts_to_view_filter(ctx.options.web_hide_hosts)
+            self._updating_view_filter = True
+            try:
+                ctx.options.update(view_filter=view_filter)
+            finally:
+                self._updating_view_filter = False
 
     def running(self):
         if hasattr(ctx.options, "web_open_browser") and ctx.options.web_open_browser:

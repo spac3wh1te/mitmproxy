@@ -96,6 +96,7 @@ export interface OptionsState {
     view_order_reversed: boolean;
     web_columns: string[];
     web_debug: boolean;
+    web_hide_hosts: string[];
     web_host: string;
     web_open_browser: boolean;
     web_password: string;
@@ -203,6 +204,7 @@ export const defaultState: OptionsState = {
     view_order_reversed: false,
     web_columns: ["tls", "icon", "path", "method", "status", "size", "time"],
     web_debug: false,
+    web_hide_hosts: [],
     web_host: "127.0.0.1",
     web_open_browser: true,
     web_password: "",

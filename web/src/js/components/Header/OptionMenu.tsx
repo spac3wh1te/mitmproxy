@@ -11,6 +11,7 @@ OptionMenu.title = "Options";
 export default function OptionMenu() {
     const dispatch = useAppDispatch();
     const openOptions = () => modalActions.setActiveModal("OptionModal");
+    const openHideHosts = () => modalActions.setActiveModal("HideHostsModal");
 
     return (
         <div>
@@ -24,6 +25,14 @@ export default function OptionMenu() {
                             onClick={() => dispatch(openOptions())}
                         >
                             Edit Options
+                        </Button>
+                        <Button
+                            title="Hide hosts from the flow list"
+                            icon="search"
+                            iconClassName="text-primary"
+                            onClick={() => dispatch(openHideHosts())}
+                        >
+                            Hide Hosts
                         </Button>
                     </div>
                     <div className="menu-legend">Options Editor</div>

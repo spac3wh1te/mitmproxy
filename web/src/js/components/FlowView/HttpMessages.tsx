@@ -14,6 +14,8 @@ import type { HTTPFlow, HTTPMessage, HTTPResponse } from "../../flow";
 import * as flowActions from "../../ducks/flows";
 import KeyValueListEditor from "../editors/KeyValueListEditor";
 import HttpMessage from "../contentviews/HttpMessage";
+import Button from "../common/Button";
+import { copyToClipboard } from "../../utils";
 
 type RequestLineProps = {
     flow: HTTPFlow;
@@ -125,15 +127,33 @@ type HeadersProps = {
 function Headers({ flow, message }: HeadersProps) {
     const dispatch = useAppDispatch();
     const part = flow.request === message ? "request" : "response";
+    const copyHeaders = () => {
+        const text = message.headers
+            .map(([name, value]) => `${name}: ${value}`)
+            .join("\n");
+        copyToClipboard(Promise.resolve(text));
+    };
 
     return (
-        <KeyValueListEditor
-            className="headers"
-            data={message.headers}
-            onChange={(headers) =>
-                dispatch(flowActions.update(flow, { [part]: { headers } }))
-            }
-        />
+        <>
+            <div className="controls">
+                <Button
+                    onClick={copyHeaders}
+                    icon="clipboard"
+                    className="btn-xs"
+                    title="Copy headers"
+                >
+                    Copy
+                </Button>
+            </div>
+            <KeyValueListEditor
+                className="headers"
+                data={message.headers}
+                onChange={(headers) =>
+                    dispatch(flowActions.update(flow, { [part]: { headers } }))
+                }
+            />
+        </>
     );
 }
 

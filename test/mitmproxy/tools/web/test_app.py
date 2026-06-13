@@ -2,6 +2,7 @@ import gzip
 import importlib
 import json
 import logging
+import tempfile
 from pathlib import Path
 from unittest import mock
 
@@ -469,7 +470,17 @@ class TestApp(tornado.testing.AsyncHTTPTestCase):
         assert self.put_json("/options", {"anticache": "foo"}).code == 400
 
     def test_option_save(self):
-        assert self.fetch("/options/save", method="POST").code == 200
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self.master.options.update(confdir=tmpdir, web_hide_hosts=["*.aa.bb.com"])
+
+            resp = self.fetch("/options/save", method="POST")
+            assert resp.code == 200, resp.body.decode()
+
+            config = Path(self.master.options.confdir) / "config.yaml"
+            assert config.exists()
+            assert "web_hide_hosts:" in config.read_text()
+            assert "- '*.aa.bb.com'" in config.read_text()
+            assert "view_filter:" in config.read_text()
 
     def test_err(self):
         with mock.patch("mitmproxy.tools.web.app.IndexHandler.get") as f:

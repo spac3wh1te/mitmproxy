@@ -1,6 +1,7 @@
 import pytest
 
 from mitmproxy.exceptions import OptionsError
+from mitmproxy.addons import view
 from mitmproxy.test import taddons
 from mitmproxy.tools.web import webaddons
 
@@ -66,3 +67,33 @@ class TestWebAuth:
             tctx.options.web_host = web_host
             tctx.options.web_port = web_port
             assert a.web_url.startswith(expected_web_url), a.web_url
+
+
+class TestWebHideHosts:
+    def test_filter_from_hide_hosts(self):
+        filt = webaddons.hide_hosts_to_view_filter(
+            [
+                "*.aa.bb.com",
+                "dataset-hub-api.aipaas.cn-hangzhou-zjwjw-d01.cloud.bianque-app.com",
+                "oss.abc.*",
+            ]
+        )
+
+        assert (
+            filt
+            == '!(~d "^[^.]+\\.aa\\.bb\\.com$" | ~d "^dataset\\-hub\\-api\\.aipaas\\.cn\\-hangzhou\\-zjwjw\\-d01\\.cloud\\.bianque\\-app\\.com$" | ~d "^oss\\.abc\\..*$")'
+        )
+
+    def test_filter_from_hide_hosts_ignores_empty_lines(self):
+        assert webaddons.hide_hosts_to_view_filter(["", "  "]) is None
+
+    def test_web_hide_hosts_updates_view_filter(self):
+        addon = webaddons.WebAddon()
+        with taddons.context(addon, view.View()) as tctx:
+            tctx.options.web_hide_hosts = ["*.aa.bb.com"]
+
+            assert tctx.options.view_filter == '!(~d "^[^.]+\\.aa\\.bb\\.com$")'
+
+            tctx.options.web_hide_hosts = []
+
+            assert tctx.options.view_filter is None

@@ -15,6 +15,7 @@ from collections.abc import Sequence
 from email import policy
 from email.parser import BytesParser
 from io import BytesIO
+from pathlib import Path
 from typing import Any
 from typing import Awaitable
 from typing import ClassVar
@@ -888,11 +889,12 @@ class Options(RequestHandler):
 
 class SaveOptions(RequestHandler):
     def post(self):
-        # try:
-        #     optmanager.save(self.master.options, CONFIG_PATH, True)
-        # except Exception as err:
-        #     raise APIError(400, "{}".format(err))
-        pass
+        try:
+            config_path = Path(self.master.options.confdir).expanduser() / "config.yaml"
+            config_path.parent.mkdir(parents=True, exist_ok=True)
+            optmanager.save(self.master.options, config_path)
+        except Exception as err:
+            raise APIError(400, f"{err}")
 
 
 class State(RequestHandler):
