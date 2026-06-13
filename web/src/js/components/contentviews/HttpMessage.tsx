@@ -10,6 +10,7 @@ import FileChooser from "../common/FileChooser";
 import * as flowActions from "../../ducks/flows";
 import { uploadContent } from "../../ducks/flows";
 import Button from "../common/Button";
+import Icon from "../common/Icon";
 import CodeEditor from "./CodeEditor";
 import ContentRenderer from "./ContentRenderer";
 import ViewSelector from "./ViewSelector";
@@ -140,6 +141,19 @@ function HttpMessageView({ flow, message, startEdit }: HttpMessageViewProps) {
                     <CopyButton flow={flow} message={message} />
                 )}
                 &nbsp;
+                {message.contentLength !== 0 && (
+                    <>
+                        <a
+                            href={MessageUtils.getContentURL(flow, message)}
+                            download
+                            className="btn btn-default btn-xs"
+                        >
+                            <Icon name="download" />
+                            &nbsp;Download
+                        </a>
+                        &nbsp;
+                    </>
+                )}
                 <Button onClick={startEdit} icon="edit" className="btn-xs">
                     Edit
                 </Button>

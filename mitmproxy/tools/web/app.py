@@ -12,6 +12,8 @@ import secrets
 import sys
 from collections.abc import Callable
 from collections.abc import Sequence
+from email import policy
+from email.parser import BytesParser
 from io import BytesIO
 from typing import Any
 from typing import Awaitable
@@ -53,6 +55,64 @@ from mitmproxy.websocket import WebSocketMessage
 # Modern browsers with ES6 module scripts require proper JavaScript MIME types.
 # See: https://github.com/mitmproxy/mitmproxy/issues/7971
 mimetypes.add_type("text/javascript", ".js")
+
+DOWNLOAD_EXTENSIONS = {
+    "application/zip": ".zip",
+    "application/x-zip-compressed": ".zip",
+    "application/pdf": ".pdf",
+    "application/json": ".json",
+    "text/html": ".html",
+    "text/plain": ".txt",
+    "image/png": ".png",
+    "image/jpeg": ".jpg",
+    "image/gif": ".gif",
+    "image/webp": ".webp",
+    "image/avif": ".avif",
+    "image/svg+xml": ".svg",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": ".pptx",
+}
+
+
+def _extract_multipart_upload_file(
+    message: http.Message,
+) -> tuple[str, str, bytes] | None:
+    content_type = message.headers.get("Content-Type", "")
+    if not content_type.lower().startswith("multipart/form-data"):
+        return None
+
+    content = message.get_content(strict=False)
+    if content is None:
+        return None
+
+    parser_content = (
+        f"Content-Type: {content_type}\r\nMIME-Version: 1.0\r\n\r\n".encode()
+        + content
+    )
+    parsed = BytesParser(policy=policy.default).parsebytes(parser_content)
+    if not parsed.is_multipart():
+        return None
+
+    for part in parsed.iter_parts():
+        filename = part.get_filename()
+        if not filename:
+            continue
+
+        part_content = part.get_payload(decode=True)
+        if part_content is None:
+            continue
+
+        part_content_type = part.get_content_type()
+        if part_content_type == "text/plain":
+            guessed_content_type = mimetypes.guess_type(filename)[0]
+            if guessed_content_type:
+                part_content_type = guessed_content_type
+
+        return filename, part_content_type, part_content
+
+    return None
+
 
 TRANSPARENT_PNG = (
     b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08"
@@ -666,24 +726,38 @@ class FlowContent(RequestHandler):
         self.view.update([self.flow])
 
     def get(self, flow_id, message):
-        message = getattr(self.flow, message)
+        message_name = message
+        message = getattr(self.flow, message_name)
         assert isinstance(self.flow, HTTPFlow)
 
-        original_cd = message.headers.get("Content-Disposition", None)
-        filename = None
-        if original_cd:
-            if m := re.search(r'filename=([-\w" .()]+)', original_cd):
-                filename = m.group(1)
-        if not filename:
-            filename = self.flow.request.path.split("?")[0].split("/")[-1]
+        content = message.get_content(strict=False)
+        if message_name == "request" and (
+            upload_file := _extract_multipart_upload_file(message)
+        ):
+            filename, content_type, content = upload_file
+        else:
+            original_cd = message.headers.get("Content-Disposition", None)
+            filename = None
+            if original_cd:
+                if m := re.search(r'filename=([-\w" .()]+)', original_cd):
+                    filename = m.group(1).strip('"')
+            if not filename:
+                filename = self.flow.request.path.split("?")[0].split("/")[-1]
+            if not filename:
+                filename = f"{message_name}-body"
+            content_type = message.headers.get("Content-Type", "application/octet-stream")
 
         filename = re.sub(r'[^-\w" .()]', "", filename)
-        cd = f"attachment; {filename=!s}"
+        content_type_base = content_type.split(";", 1)[0].lower()
+        if not os.path.splitext(filename)[1]:
+            filename += DOWNLOAD_EXTENSIONS.get(content_type_base, "")
+
+        cd = f'attachment; filename="{filename}"'
         self.set_header("Content-Disposition", cd)
-        self.set_header("Content-Type", "application/text")
+        self.set_header("Content-Type", content_type)
         self.set_header("X-Content-Type-Options", "nosniff")
         self.set_header("X-Frame-Options", "DENY")
-        self.write(message.get_content(strict=False))
+        self.write(content)
 
 
 class FlowContentView(RequestHandler):

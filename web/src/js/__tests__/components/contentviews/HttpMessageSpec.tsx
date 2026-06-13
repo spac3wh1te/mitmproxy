@@ -90,6 +90,12 @@ test("HttpMessage", async () => {
     expect(asFragment()).toMatchSnapshot();
 
     await waitFor(() => screen.getByText("Copy"));
+    const download = screen.getByRole("link", { name: /download/i });
+    expect(download).toHaveAttribute(
+        "href",
+        `./flows/${tflow.id}/request/content.data`,
+    );
+    expect(download).toHaveAttribute("download");
     expect(asFragment()).toMatchSnapshot();
 });
 

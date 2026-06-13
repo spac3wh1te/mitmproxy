@@ -42,6 +42,37 @@ exports[`HttpMessage 1`] = `
          Copy
       </button>
        
+      <a
+        class="btn btn-default btn-xs"
+        download=""
+        href="./flows/d91165be-ca1f-4612-88a9-c0f8696f3e29/request/content.data"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-download icon icon-download"
+          fill="none"
+          height="16"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="16"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M12 15V3"
+          />
+          <path
+            d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+          />
+          <path
+            d="m7 10 5 5 5-5"
+          />
+        </svg>
+         Download
+      </a>
+       
       <button
         class="btn-xs btn btn-default"
       >
@@ -361,6 +392,37 @@ exports[`HttpMessage 3`] = `
          Copy
       </button>
        
+      <a
+        class="btn btn-default btn-xs"
+        download=""
+        href="./flows/d91165be-ca1f-4612-88a9-c0f8696f3e29/request/content.data"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-download icon icon-download"
+          fill="none"
+          height="16"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="16"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M12 15V3"
+          />
+          <path
+            d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+          />
+          <path
+            d="m7 10 5 5 5-5"
+          />
+        </svg>
+         Download
+      </a>
+       
       <button
         class="btn-xs btn btn-default"
       >
@@ -526,6 +588,37 @@ exports[`HttpMessage 4`] = `
         </svg>
          Copy
       </button>
+       
+      <a
+        class="btn btn-default btn-xs"
+        download=""
+        href="./flows/d91165be-ca1f-4612-88a9-c0f8696f3e29/request/content.data"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-download icon icon-download"
+          fill="none"
+          height="16"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="16"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M12 15V3"
+          />
+          <path
+            d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+          />
+          <path
+            d="m7 10 5 5 5-5"
+          />
+        </svg>
+         Download
+      </a>
        
       <button
         class="btn-xs btn btn-default"

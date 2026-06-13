@@ -278,22 +278,79 @@ class TestApp(tornado.testing.AsyncHTTPTestCase):
         f = self.view.get_by_id("42")
         f.backup()
         f.response.headers["Content-Disposition"] = 'inline; filename="filename.jpg"'
+        f.response.headers["Content-Type"] = "image/jpeg"
 
         r = self.fetch("/flows/42/response/content.data")
         assert r.body == b"message"
         assert r.headers["Content-Disposition"] == 'attachment; filename="filename.jpg"'
+        assert r.headers["Content-Type"] == "image/jpeg"
 
         del f.response.headers["Content-Disposition"]
         f.request.path = "/foo/bar.jpg"
         assert (
             self.fetch("/flows/42/response/content.data").headers["Content-Disposition"]
-            == "attachment; filename=bar.jpg"
+            == 'attachment; filename="bar.jpg"'
         )
 
         f.response.content = b""
         r = self.fetch("/flows/42/response/content.data")
         assert r.code == 200
         assert r.body == b""
+
+        f.revert()
+
+    def test_flow_content_download_adds_common_file_extensions(self):
+        cases = [
+            (
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "download.docx",
+            ),
+            ("application/zip", "download.zip"),
+            ("image/png", "download.png"),
+        ]
+
+        for content_type, expected_filename in cases:
+            f = self.view.get_by_id("42")
+            f.backup()
+
+            f.request.path = "/download"
+            f.response.headers["Content-Type"] = content_type
+
+            r = self.fetch("/flows/42/response/content.data")
+            assert r.body == b"message"
+            assert r.headers["Content-Disposition"] == (
+                f'attachment; filename="{expected_filename}"'
+            )
+            assert r.headers["Content-Type"] == content_type
+
+            f.revert()
+
+    def test_flow_content_download_extracts_multipart_upload_file(self):
+        f = self.view.get_by_id("42")
+        f.backup()
+
+        zip_content = b"PK\x03\x04zip content"
+        boundary = "upload-boundary"
+        f.request.path = "/upload"
+        f.request.headers["Content-Type"] = f"multipart/form-data; boundary={boundary}"
+        f.request.content = (
+            b"--upload-boundary\r\n"
+            b'Content-Disposition: form-data; name="description"\r\n'
+            b"\r\n"
+            b"hello\r\n"
+            b"--upload-boundary\r\n"
+            b'Content-Disposition: form-data; name="file"; filename="1.zip"\r\n'
+            b"Content-Type: application/zip\r\n"
+            b"\r\n"
+            + zip_content
+            + b"\r\n"
+            b"--upload-boundary--\r\n"
+        )
+
+        r = self.fetch("/flows/42/request/content.data")
+        assert r.body == zip_content
+        assert r.headers["Content-Disposition"] == 'attachment; filename="1.zip"'
+        assert r.headers["Content-Type"] == "application/zip"
 
         f.revert()
 
